@@ -25,7 +25,8 @@
             <i :class="msg.role === 'user' ? 'el-icon-user' : 'el-icon-s-platform'"></i>
           </div>
           <div class="message-content">
-            <div class="message-text">{{ msg.content }}</div>
+            <div v-if="msg.role === 'user'" class="message-text">{{ msg.content }}</div>
+            <div v-else class="message-text markdown-body" v-html="renderMarkdown(msg.content)"></div>
             <div class="message-time">{{ msg.createdAt }}</div>
           </div>
         </div>
@@ -51,6 +52,8 @@
 
 <script>
 import { chat, getTaskStatus, getConversations, getConversationMessages, deleteConversation } from '@/api/ai'
+import { formatDate } from '@/utils/date'
+import { renderMarkdown } from '@/utils/markdown'
 
 export default {
   name: 'AiChat',
@@ -97,7 +100,7 @@ export default {
       if (!this.inputMessage.trim() || this.loading) return
       const userMessage = this.inputMessage
       this.inputMessage = ''
-      this.messages.push({ id: Date.now(), role: 'user', content: userMessage, createdAt: new Date().toLocaleString() })
+      this.messages.push({ id: Date.now(), role: 'user', content: userMessage, createdAt: formatDate(new Date()) })
       this.$nextTick(() => this.scrollToBottom())
       this.loading = true
       try {
@@ -112,7 +115,7 @@ export default {
         }
         this.startPolling(taskId)
       } catch (error) {
-        this.messages.push({ id: Date.now() + 1, role: 'assistant', content: '抱歉，发生了错误。请重试。', createdAt: new Date().toLocaleString() })
+        this.messages.push({ id: Date.now() + 1, role: 'assistant', content: '抱歉，发生了错误。请重试。', createdAt: formatDate(new Date()) })
         this.loading = false
       }
     },
@@ -124,18 +127,18 @@ export default {
           const { status, message, error } = res.data
           if (status === 'COMPLETED') {
             this.stopPolling()
-            this.messages.push({ id: Date.now() + 1, role: 'assistant', content: message, createdAt: new Date().toLocaleString() })
+            this.messages.push({ id: Date.now() + 1, role: 'assistant', content: message, createdAt: formatDate(new Date()) })
             this.loading = false
             this.$nextTick(() => this.scrollToBottom())
           } else if (status === 'FAILED') {
             this.stopPolling()
-            this.messages.push({ id: Date.now() + 1, role: 'assistant', content: error || '抱歉，发生了错误。请重试。', createdAt: new Date().toLocaleString() })
+            this.messages.push({ id: Date.now() + 1, role: 'assistant', content: error || '抱歉，发生了错误。请重试。', createdAt: formatDate(new Date()) })
             this.loading = false
             this.$nextTick(() => this.scrollToBottom())
           }
         } catch (error) {
           this.stopPolling()
-          this.messages.push({ id: Date.now() + 1, role: 'assistant', content: '抱歉，发生了错误。请重试。', createdAt: new Date().toLocaleString() })
+          this.messages.push({ id: Date.now() + 1, role: 'assistant', content: '抱歉，发生了错误。请重试。', createdAt: formatDate(new Date()) })
           this.loading = false
         }
       }, 1000)
@@ -157,6 +160,9 @@ export default {
       } catch (error) {
         // Error handled by interceptor
       }
+    },
+    renderMarkdown(content) {
+      return renderMarkdown(content)
     },
     scrollToBottom() {
       if (this.$refs.messages) {
@@ -331,6 +337,37 @@ export default {
 .chat-input {
   padding: 16px;
   border-top: 1px solid var(--border-color);
+}
+
+.markdown-body {
+  :deep(pre) {
+    background: var(--bg-color);
+    border-radius: 8px;
+    padding: 12px;
+    overflow-x: auto;
+    margin: 8px 0;
+  }
+
+  :deep(code) {
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 13px;
+  }
+
+  :deep(p) {
+    margin: 4px 0;
+  }
+
+  :deep(ul), :deep(ol) {
+    padding-left: 20px;
+    margin: 8px 0;
+  }
+
+  :deep(blockquote) {
+    border-left: 3px solid var(--primary-color);
+    padding-left: 12px;
+    margin: 8px 0;
+    opacity: 0.8;
+  }
 }
 
 @keyframes typing {

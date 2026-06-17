@@ -56,6 +56,7 @@
 <script>
 import { getTeamDetail, leaveTeam, removeMember, updateMemberRole } from '@/api/team'
 import { getProjectPage } from '@/api/project'
+import { copyToClipboard } from '@/utils/clipboard'
 
 export default {
   name: 'TeamDetail',
@@ -94,34 +95,16 @@ export default {
       const map = { OWNER: '拥有者', ADMIN: '管理员', MEMBER: '成员' }
       return map[role] || '成员'
     },
-    copyInviteCode() {
+    async copyInviteCode() {
       if (this.team.inviteCode) {
-        const text = this.team.inviteCode
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(text).then(() => {
-            this.$message.success('邀请码已复制')
-          }).catch(() => {
-            this.fallbackCopy(text)
-          })
-        } else {
-          this.fallbackCopy(text)
+        try {
+          await copyToClipboard(this.team.inviteCode)
+          this.$message.success('邀请码已复制')
+        } catch (error) {
+          this.$message.error('复制失败，请手动复制: ' + this.team.inviteCode)
         }
       }
     },
-    fallbackCopy(text) {
-      const textarea = document.createElement('textarea')
-      textarea.value = text
-      textarea.style.position = 'fixed'
-      textarea.style.opacity = '0'
-      document.body.appendChild(textarea)
-      textarea.select()
-      try {
-        document.execCommand('copy')
-        this.$message.success('邀请码已复制')
-      } catch (e) {
-        this.$message.error('复制失败，请手动复制: ' + text)
-      }
-      document.body.removeChild(textarea)
     },
     leaveTeam() {
       this.$confirm('确定退出该团队吗？', '警告', { type: 'warning' }).then(async () => {

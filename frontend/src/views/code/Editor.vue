@@ -126,6 +126,9 @@
 <script>
 import { getProjectFiles, getFileContent, saveFile } from '@/api/project'
 import { chat, getTaskStatus, getConversations, getConversationMessages } from '@/api/ai'
+import { renderMarkdown, sanitizeHtml, extractCodeBlocks } from '@/utils/markdown'
+import { copyToClipboard } from '@/utils/clipboard'
+import { formatDate } from '@/utils/date'
 
 export default {
   name: 'CodeEditor',
@@ -329,26 +332,16 @@ export default {
       this.content = this.content.substring(0, start) + '\n' + code + '\n' + this.content.substring(end)
       this.$message.success('代码已插入')
     },
-    copyCode(code) {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(code).then(() => {
-          this.$message.success('代码已复制')
-        })
-      } else {
-        const textarea = document.createElement('textarea')
-        textarea.value = code
-        document.body.appendChild(textarea)
-        textarea.select()
-        document.execCommand('copy')
-        document.body.removeChild(textarea)
+    async copyCode(code) {
+      try {
+        await copyToClipboard(code)
         this.$message.success('代码已复制')
+      } catch (error) {
+        this.$message.error('复制失败')
       }
     },
     formatMessage(content) {
-      return content
-        .replace(/```[\s\S]*?```/g, '<pre class="code-block">$&</pre>')
-        .replace(/`([^`]+)`/g, '<code>$1</code>')
-        .replace(/\n/g, '<br>')
+      return renderMarkdown(content)
     },
     scrollToBottom() {
       if (this.$refs.aiMessages) {
