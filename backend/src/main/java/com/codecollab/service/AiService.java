@@ -7,6 +7,7 @@ import java.util.Map;
 
 public interface AiService {
     Map<String, Object> chat(Long userId, AiChatDTO dto);
+    Map<String, Object> getTaskStatus(Long taskId, Long userId);
     List<AiConversationVO> getUserConversations(Long userId);
     List<Map<String, Object>> getConversationMessages(Long conversationId, Long userId);
     void deleteConversation(Long conversationId, Long userId);

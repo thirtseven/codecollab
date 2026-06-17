@@ -125,7 +125,7 @@
 
 <script>
 import { getProjectFiles, getFileContent, saveFile } from '@/api/project'
-import { chat, getConversations, getConversationMessages } from '@/api/ai'
+import { chat, getTaskStatus, getConversations, getConversationMessages } from '@/api/ai'
 
 export default {
   name: 'CodeEditor',
@@ -141,12 +141,16 @@ export default {
       aiMessages: [],
       aiInput: '',
       aiLoading: false,
-      aiConversationId: null
+      aiConversationId: null,
+      aiPollingTimer: null
     }
   },
   created() {
     this.projectId = this.$route.params.projectId
     this.fetchFiles()
+  },
+  beforeDestroy() {
+    this.stopAiPolling()
   },
   methods: {
     async fetchFiles() {
@@ -258,24 +262,60 @@ export default {
           message: message,
           projectId: this.projectId
         })
-        const { conversationId, message: aiResponse } = res.data
+        const { taskId, conversationId } = res.data
         this.aiConversationId = conversationId
-        const codeMatch = aiResponse.match(/```[\s\S]*?\n([\s\S]*?)```/)
-        this.aiMessages.push({
-          role: 'assistant',
-          content: aiResponse,
-          hasCode: !!codeMatch,
-          code: codeMatch ? codeMatch[1] : ''
-        })
+        this.startAiPolling(taskId)
       } catch (error) {
         this.aiMessages.push({
           role: 'assistant',
           content: '抱歉，发生了错误。请重试。',
           hasCode: false
         })
-      } finally {
         this.aiLoading = false
-        this.$nextTick(() => this.scrollToBottom())
+      }
+    },
+    startAiPolling(taskId) {
+      this.stopAiPolling()
+      this.aiPollingTimer = setInterval(async () => {
+        try {
+          const res = await getTaskStatus(taskId)
+          const { status, message, error } = res.data
+          if (status === 'COMPLETED') {
+            this.stopAiPolling()
+            const codeMatch = message.match(/```[\s\S]*?\n([\s\S]*?)```/)
+            this.aiMessages.push({
+              role: 'assistant',
+              content: message,
+              hasCode: !!codeMatch,
+              code: codeMatch ? codeMatch[1] : ''
+            })
+            this.aiLoading = false
+            this.$nextTick(() => this.scrollToBottom())
+          } else if (status === 'FAILED') {
+            this.stopAiPolling()
+            this.aiMessages.push({
+              role: 'assistant',
+              content: error || '抱歉，发生了错误。请重试。',
+              hasCode: false
+            })
+            this.aiLoading = false
+            this.$nextTick(() => this.scrollToBottom())
+          }
+        } catch (error) {
+          this.stopAiPolling()
+          this.aiMessages.push({
+            role: 'assistant',
+            content: '抱歉，发生了错误。请重试。',
+            hasCode: false
+          })
+          this.aiLoading = false
+        }
+      }, 1000)
+    },
+    stopAiPolling() {
+      if (this.aiPollingTimer) {
+        clearInterval(this.aiPollingTimer)
+        this.aiPollingTimer = null
       }
     },
     insertCode(code) {

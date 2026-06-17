@@ -50,7 +50,7 @@
 </template>
 
 <script>
-import { chat, getConversations, getConversationMessages, deleteConversation } from '@/api/ai'
+import { chat, getTaskStatus, getConversations, getConversationMessages, deleteConversation } from '@/api/ai'
 
 export default {
   name: 'AiChat',
@@ -60,11 +60,15 @@ export default {
       currentConversation: null,
       messages: [],
       inputMessage: '',
-      loading: false
+      loading: false,
+      pollingTimer: null
     }
   },
   created() {
     this.fetchConversations()
+  },
+  beforeDestroy() {
+    this.stopPolling()
   },
   methods: {
     async fetchConversations() {
@@ -101,17 +105,45 @@ export default {
           conversationId: this.currentConversation?.id,
           message: userMessage
         })
-        const { conversationId, message } = res.data
+        const { taskId, conversationId } = res.data
         if (!this.currentConversation) {
           this.currentConversation = { id: conversationId, title: userMessage.substring(0, 50) }
           this.fetchConversations()
         }
-        this.messages.push({ id: Date.now() + 1, role: 'assistant', content: message, createdAt: new Date().toLocaleString() })
-        this.$nextTick(() => this.scrollToBottom())
+        this.startPolling(taskId)
       } catch (error) {
         this.messages.push({ id: Date.now() + 1, role: 'assistant', content: '抱歉，发生了错误。请重试。', createdAt: new Date().toLocaleString() })
-      } finally {
         this.loading = false
+      }
+    },
+    startPolling(taskId) {
+      this.stopPolling()
+      this.pollingTimer = setInterval(async () => {
+        try {
+          const res = await getTaskStatus(taskId)
+          const { status, message, error } = res.data
+          if (status === 'COMPLETED') {
+            this.stopPolling()
+            this.messages.push({ id: Date.now() + 1, role: 'assistant', content: message, createdAt: new Date().toLocaleString() })
+            this.loading = false
+            this.$nextTick(() => this.scrollToBottom())
+          } else if (status === 'FAILED') {
+            this.stopPolling()
+            this.messages.push({ id: Date.now() + 1, role: 'assistant', content: error || '抱歉，发生了错误。请重试。', createdAt: new Date().toLocaleString() })
+            this.loading = false
+            this.$nextTick(() => this.scrollToBottom())
+          }
+        } catch (error) {
+          this.stopPolling()
+          this.messages.push({ id: Date.now() + 1, role: 'assistant', content: '抱歉，发生了错误。请重试。', createdAt: new Date().toLocaleString() })
+          this.loading = false
+        }
+      }, 1000)
+    },
+    stopPolling() {
+      if (this.pollingTimer) {
+        clearInterval(this.pollingTimer)
+        this.pollingTimer = null
       }
     },
     async deleteConversation(conv) {

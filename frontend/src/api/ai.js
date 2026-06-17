@@ -4,6 +4,10 @@ export function chat(data) {
   return request({ url: '/ai/chat', method: 'post', data, timeout: 60000 })
 }
 
+export function getTaskStatus(taskId) {
+  return request({ url: `/ai/tasks/${taskId}`, method: 'get', showLoading: false })
+}
+
 export function getConversations() {
   return request({ url: '/ai/conversations', method: 'get', showLoading: false })
 }

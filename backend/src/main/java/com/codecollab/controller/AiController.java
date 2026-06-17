@@ -24,6 +24,12 @@ public class AiController {
         return Result.success(aiService.chat(userId, dto));
     }
 
+    @GetMapping("/tasks/{taskId}")
+    public Result<Map<String, Object>> getTaskStatus(HttpServletRequest request, @PathVariable Long taskId) {
+        Long userId = (Long) request.getAttribute("userId");
+        return Result.success(aiService.getTaskStatus(taskId, userId));
+    }
+
     @GetMapping("/conversations")
     public Result<List<AiConversationVO>> getConversations(HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");

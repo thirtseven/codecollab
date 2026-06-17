@@ -7,18 +7,22 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.codecollab.dto.AiChatDTO;
 import com.codecollab.entity.AiConversation;
 import com.codecollab.entity.AiMessage;
+import com.codecollab.entity.AiTask;
 import com.codecollab.exception.BusinessException;
 import com.codecollab.mapper.AiConversationMapper;
 import com.codecollab.mapper.AiMessageMapper;
+import com.codecollab.mapper.AiTaskMapper;
 import com.codecollab.mapper.SystemConfigMapper;
 import com.codecollab.service.AiService;
 import com.codecollab.vo.AiConversationVO;
 import okhttp3.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -30,6 +34,9 @@ public class AiServiceImpl implements AiService {
 
     @Autowired
     private AiMessageMapper messageMapper;
+
+    @Autowired
+    private AiTaskMapper taskMapper;
 
     @Autowired
     private SystemConfigMapper systemConfigMapper;
@@ -71,19 +78,70 @@ public class AiServiceImpl implements AiService {
         userMessage.setContent(dto.getMessage());
         messageMapper.insert(userMessage);
 
-        List<AiMessage> history = getConversationHistory(conversationId);
-        String aiResponse = callAiApi(history);
+        AiTask task = new AiTask();
+        task.setUserId(userId);
+        task.setConversationId(conversationId);
+        task.setMessage(dto.getMessage());
+        task.setStatus("PENDING");
+        taskMapper.insert(task);
 
-        AiMessage assistantMessage = new AiMessage();
-        assistantMessage.setConversationId(conversationId);
-        assistantMessage.setRole("assistant");
-        assistantMessage.setContent(aiResponse);
-        messageMapper.insert(assistantMessage);
+        processAiTaskAsync(task.getId());
 
         Map<String, Object> result = new HashMap<>();
+        result.put("taskId", task.getId());
         result.put("conversationId", conversationId);
-        result.put("message", aiResponse);
+        result.put("status", "PENDING");
         return result;
+    }
+
+    @Override
+    public Map<String, Object> getTaskStatus(Long taskId, Long userId) {
+        AiTask task = taskMapper.selectById(taskId);
+        if (task == null || !task.getUserId().equals(userId)) {
+            throw new BusinessException(403, "Access denied");
+        }
+        Map<String, Object> result = new HashMap<>();
+        result.put("taskId", task.getId());
+        result.put("status", task.getStatus());
+        result.put("conversationId", task.getConversationId());
+        if ("COMPLETED".equals(task.getStatus())) {
+            result.put("message", task.getResponse());
+        } else if ("FAILED".equals(task.getStatus())) {
+            result.put("error", task.getErrorMessage());
+        }
+        return result;
+    }
+
+    @Async("aiExecutor")
+    public void processAiTaskAsync(Long taskId) {
+        AiTask task = taskMapper.selectById(taskId);
+        if (task == null) {
+            return;
+        }
+
+        try {
+            task.setStatus("PROCESSING");
+            taskMapper.updateById(task);
+
+            List<AiMessage> history = getConversationHistory(task.getConversationId());
+            String aiResponse = callAiApi(history);
+
+            AiMessage assistantMessage = new AiMessage();
+            assistantMessage.setConversationId(task.getConversationId());
+            assistantMessage.setRole("assistant");
+            assistantMessage.setContent(aiResponse);
+            messageMapper.insert(assistantMessage);
+
+            task.setStatus("COMPLETED");
+            task.setResponse(aiResponse);
+            task.setCompletedAt(LocalDateTime.now());
+            taskMapper.updateById(task);
+        } catch (Exception e) {
+            task.setStatus("FAILED");
+            task.setErrorMessage(e.getMessage());
+            task.setCompletedAt(LocalDateTime.now());
+            taskMapper.updateById(task);
+        }
     }
 
     @Override
