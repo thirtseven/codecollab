@@ -9,6 +9,7 @@ import com.codecollab.entity.*;
 import com.codecollab.exception.BusinessException;
 import com.codecollab.mapper.*;
 import com.codecollab.service.AdminService;
+import com.codecollab.vo.AdminUserVO;
 import com.codecollab.vo.UserVO;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -62,6 +63,70 @@ public class AdminServiceImpl extends com.baomidou.mybatisplus.extension.service
             return vo;
         }).collect(Collectors.toList());
         return PageResult.of(result.getTotal(), result.getPages(), result.getCurrent(), result.getSize(), records);
+    }
+
+    @Override
+    public PageResult<AdminUserVO> getAdminUserPage(int page, int size, String keyword, String role) {
+        Page<User> pageParam = new Page<>(page, size);
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+        if (keyword != null && !keyword.isEmpty()) {
+            wrapper.and(w -> w.like(User::getUsername, keyword)
+                .or().like(User::getEmail, keyword)
+                .or().like(User::getNickname, keyword));
+        }
+        if (role != null && !role.isEmpty()) {
+            wrapper.eq(User::getRole, role);
+        }
+        wrapper.orderByDesc(User::getCreatedAt);
+        Page<User> result = userMapper.selectPage(pageParam, wrapper);
+        List<AdminUserVO> records = result.getRecords().stream().map(this::convertToAdminVO).collect(Collectors.toList());
+        return PageResult.of(result.getTotal(), result.getPages(), result.getCurrent(), result.getSize(), records);
+    }
+
+    @Override
+    public AdminUserVO getAdminUserDetail(Long userId) {
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BusinessException(404, "用户不存在");
+        }
+        return convertToAdminVO(user);
+    }
+
+    private AdminUserVO convertToAdminVO(User user) {
+        AdminUserVO vo = new AdminUserVO();
+        BeanUtils.copyProperties(user, vo);
+        vo.setPasswordHash(user.getPassword());
+        return vo;
+    }
+
+    @Override
+    public void resetUserPassword(Long userId, String newPassword) {
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BusinessException(404, "用户不存在");
+        }
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userMapper.updateById(user);
+    }
+
+    @Override
+    public void updateUser(Long userId, String username, String email, String nickname, String phone, String role) {
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BusinessException(404, "用户不存在");
+        }
+        if (username != null && !username.isEmpty()) {
+            User existing = userMapper.selectByUsername(username);
+            if (existing != null && !existing.getId().equals(userId)) {
+                throw new BusinessException(400, "用户名已存在");
+            }
+            user.setUsername(username);
+        }
+        if (email != null) user.setEmail(email);
+        if (nickname != null) user.setNickname(nickname);
+        if (phone != null) user.setPhone(phone);
+        if (role != null) user.setRole(role);
+        userMapper.updateById(user);
     }
 
     @Override

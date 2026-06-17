@@ -14,7 +14,7 @@ public interface ProjectService extends IService<Project> {
     ProjectVO updateProject(Long projectId, Long userId, ProjectDTO dto);
     void deleteProject(Long projectId, Long userId);
     ProjectVO getProjectDetail(Long projectId);
-    PageResult<ProjectVO> getProjectPage(int page, int size, Long teamId, String keyword);
+    PageResult<ProjectVO> getProjectPage(int page, int size, Long teamId, String keyword, Long userId);
     List<ProjectFile> getProjectFiles(Long projectId);
     ProjectFile getFileContent(Long fileId);
     ProjectFile saveFile(Long projectId, Long userId, FileDTO dto);

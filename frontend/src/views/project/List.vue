@@ -11,18 +11,36 @@
     </div>
     <el-row :gutter="20">
       <el-col :span="6" v-for="project in projects" :key="project.id">
-        <el-card class="project-card" shadow="hover" @click.native="$router.push(`/projects/${project.id}`)">
-          <div class="project-card-header">
+        <el-card class="project-card" shadow="hover">
+          <div class="project-card-header" @click="$router.push(`/projects/${project.id}`)">
             <div class="project-icon">
               <i class="el-icon-document"></i>
             </div>
-            <el-tag size="small">{{ project.language || '未知' }}</el-tag>
+            <div class="project-actions">
+              <el-tag size="small">{{ project.language || '未知' }}</el-tag>
+              <el-dropdown trigger="click" @command="handleCommand($event, project)" @click.native.stop>
+                <i class="el-icon-more"></i>
+                <el-dropdown-menu slot="dropdown">
+                  <el-dropdown-item command="edit">
+                    <i class="el-icon-edit"></i> 编辑
+                  </el-dropdown-item>
+                  <el-dropdown-item command="code">
+                    <i class="el-icon-edit-outline"></i> 打开编辑器
+                  </el-dropdown-item>
+                  <el-dropdown-item command="delete" divided>
+                    <i class="el-icon-delete"></i> 删除
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </el-dropdown>
+            </div>
           </div>
-          <h3>{{ project.name }}</h3>
-          <p>{{ project.description || '暂无描述' }}</p>
-          <div class="project-meta">
-            <span><i class="el-icon-folder"></i> {{ project.fileCount || 0 }} 个文件</span>
-            <span><i class="el-icon-upload2"></i> {{ project.submissionCount || 0 }} 次提交</span>
+          <div @click="$router.push(`/projects/${project.id}`)">
+            <h3>{{ project.name }}</h3>
+            <p>{{ project.description || '暂无描述' }}</p>
+            <div class="project-meta">
+              <span><i class="el-icon-folder"></i> {{ project.fileCount || 0 }} 个文件</span>
+              <span><i class="el-icon-upload2"></i> {{ project.submissionCount || 0 }} 次提交</span>
+            </div>
           </div>
         </el-card>
       </el-col>
@@ -65,7 +83,7 @@
 </template>
 
 <script>
-import { getProjectPage, createProject } from '@/api/project'
+import { getProjectPage, createProject, deleteProject } from '@/api/project'
 import { getMyTeams } from '@/api/team'
 
 export default {
@@ -128,6 +146,28 @@ export default {
           this.creating = false
         }
       })
+    },
+    handleCommand(command, project) {
+      if (command === 'edit') {
+        this.$router.push(`/projects/${project.id}`)
+      } else if (command === 'code') {
+        this.$router.push(`/code/${project.id}`)
+      } else if (command === 'delete') {
+        this.$confirm(`确定删除项目 "${project.name}" 吗？删除后将无法恢复！`, '警告', {
+          confirmButtonText: '确定删除',
+          cancelButtonText: '取消',
+          type: 'warning',
+          confirmButtonClass: 'el-button--danger'
+        }).then(async () => {
+          try {
+            await deleteProject(project.id)
+            this.$message.success('项目已删除')
+            this.fetchProjects()
+          } catch (error) {
+            // Error handled by interceptor
+          }
+        }).catch(() => {})
+      }
     }
   }
 }
@@ -164,6 +204,23 @@ export default {
     justify-content: space-between;
     align-items: flex-start;
     margin-bottom: 12px;
+  }
+
+  .project-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .el-icon-more {
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      transition: background-color 0.2s ease;
+
+      &:hover {
+        background: var(--bg-color);
+      }
+    }
   }
 
   .project-icon {

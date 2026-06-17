@@ -45,12 +45,13 @@ public class ProjectController {
     }
 
     @GetMapping
-    public Result<PageResult<ProjectVO>> getProjectPage(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) Long teamId,
-            @RequestParam(required = false) String keyword) {
-        return Result.success(projectService.getProjectPage(page, size, teamId, keyword));
+    public Result<PageResult<ProjectVO>> getProjectPage(HttpServletRequest request,
+                                                          @RequestParam(defaultValue = "1") int page,
+                                                          @RequestParam(defaultValue = "10") int size,
+                                                          @RequestParam(required = false) Long teamId,
+                                                          @RequestParam(required = false) String keyword) {
+        Long userId = (Long) request.getAttribute("userId");
+        return Result.success(projectService.getProjectPage(page, size, teamId, keyword, userId));
     }
 
     @GetMapping("/{id}/files")

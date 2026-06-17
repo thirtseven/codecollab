@@ -52,7 +52,7 @@ public class TeamServiceImpl extends com.baomidou.mybatisplus.extension.service.
         member.setRole("OWNER");
         teamMemberMapper.insert(member);
 
-        return getTeamDetail(team.getId());
+        return getTeamDetail(team.getId(), userId, null);
     }
 
     @Override
@@ -71,7 +71,7 @@ public class TeamServiceImpl extends com.baomidou.mybatisplus.extension.service.
         if (dto.getAvatar() != null) team.setAvatar(dto.getAvatar());
         if (dto.getMaxMembers() != null) team.setMaxMembers(dto.getMaxMembers());
         teamMapper.updateById(team);
-        return getTeamDetail(teamId);
+        return getTeamDetail(teamId, userId, null);
     }
 
     @Override
@@ -91,7 +91,25 @@ public class TeamServiceImpl extends com.baomidou.mybatisplus.extension.service.
     }
 
     @Override
-    public TeamVO getTeamDetail(Long teamId) {
+    public TeamVO getTeamDetail(Long teamId, Long userId, String inviteCode) {
+        TeamMember member = teamMemberMapper.selectByTeamAndUser(teamId, userId);
+        if (member == null) {
+            if (inviteCode == null || inviteCode.isEmpty()) {
+                throw new BusinessException(403, "您不是团队成员，请输入邀请码加入团队");
+            }
+            Team team = teamMapper.selectById(teamId);
+            if (team == null) {
+                throw new BusinessException(404, "团队不存在");
+            }
+            if (!team.getInviteCode().equals(inviteCode)) {
+                throw new BusinessException(400, "邀请码无效");
+            }
+            TeamMember newMember = new TeamMember();
+            newMember.setTeamId(teamId);
+            newMember.setUserId(userId);
+            newMember.setRole("MEMBER");
+            teamMemberMapper.insert(newMember);
+        }
         Team team = teamMapper.selectTeamDetail(teamId);
         if (team == null) {
             throw new BusinessException(404, "团队不存在");
@@ -104,11 +122,19 @@ public class TeamServiceImpl extends com.baomidou.mybatisplus.extension.service.
     }
 
     @Override
-    public PageResult<TeamVO> getTeamPage(int page, int size, String keyword) {
+    public PageResult<TeamVO> getTeamPage(int page, int size, String keyword, Long userId) {
         Page<Team> pageParam = new Page<>(page, size);
+        List<Team> teams = teamMapper.selectTeamsByUserId(userId);
+        List<Long> teamIds = teams.stream().map(Team::getId).collect(Collectors.toList());
+        
         LambdaQueryWrapper<Team> wrapper = new LambdaQueryWrapper<>();
+        if (teamIds.isEmpty()) {
+            wrapper.eq(Team::getId, -1);
+        } else {
+            wrapper.in(Team::getId, teamIds);
+        }
         if (keyword != null && !keyword.isEmpty()) {
-            wrapper.like(Team::getName, keyword).or().like(Team::getDescription, keyword);
+            wrapper.and(w -> w.like(Team::getName, keyword).or().like(Team::getDescription, keyword));
         }
         wrapper.orderByDesc(Team::getCreatedAt);
         Page<Team> result = teamMapper.selectPage(pageParam, wrapper);

@@ -19,8 +19,9 @@ public class RegisterDTO {
     @Size(min = 6, max = 20, message = "Password must be 6-20 characters")
     private String password;
 
-    @NotBlank(message = "Verification code is required")
     private String code;
 
     private String nickname;
+
+    private String role;
 }

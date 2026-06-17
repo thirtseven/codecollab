@@ -12,8 +12,8 @@ public interface TeamService extends IService<Team> {
     TeamVO createTeam(Long userId, TeamDTO dto);
     TeamVO updateTeam(Long teamId, Long userId, TeamDTO dto);
     void deleteTeam(Long teamId, Long userId);
-    TeamVO getTeamDetail(Long teamId);
-    PageResult<TeamVO> getTeamPage(int page, int size, String keyword);
+    TeamVO getTeamDetail(Long teamId, Long userId, String inviteCode);
+    PageResult<TeamVO> getTeamPage(int page, int size, String keyword, Long userId);
     List<TeamVO> getUserTeams(Long userId);
     void joinTeam(Long userId, String inviteCode);
     void leaveTeam(Long teamId, Long userId);

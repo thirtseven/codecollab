@@ -9,6 +9,7 @@ import com.codecollab.vo.UserVO;
 public interface UserService {
     LoginVO login(LoginDTO dto, String ip);
     UserVO register(RegisterDTO dto);
+    UserVO adminRegister(RegisterDTO dto);
     void sendVerificationCode(String email, String type);
     void verifyEmail(String email, String code, String type);
     UserVO getUserInfo(Long userId);

@@ -23,6 +23,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -135,12 +136,27 @@ public class ProjectServiceImpl extends com.baomidou.mybatisplus.extension.servi
     }
 
     @Override
-    public PageResult<ProjectVO> getProjectPage(int page, int size, Long teamId, String keyword) {
+    public PageResult<ProjectVO> getProjectPage(int page, int size, Long teamId, String keyword, Long userId) {
         Page<Project> pageParam = new Page<>(page, size);
         LambdaQueryWrapper<Project> wrapper = new LambdaQueryWrapper<>();
+        
+        List<TeamMember> userTeams = teamMemberMapper.selectList(
+            new LambdaQueryWrapper<TeamMember>().eq(TeamMember::getUserId, userId)
+        );
+        List<Long> userTeamIds = userTeams.stream().map(TeamMember::getTeamId).collect(Collectors.toList());
+        
         if (teamId != null) {
+            if (!userTeamIds.contains(teamId)) {
+                return PageResult.of(0L, 0L, (long) page, (long) size, new ArrayList<>());
+            }
             wrapper.eq(Project::getTeamId, teamId);
+        } else {
+            if (userTeamIds.isEmpty()) {
+                return PageResult.of(0L, 0L, (long) page, (long) size, new ArrayList<>());
+            }
+            wrapper.in(Project::getTeamId, userTeamIds);
         }
+        
         if (keyword != null && !keyword.isEmpty()) {
             wrapper.and(w -> w.like(Project::getName, keyword).or().like(Project::getDescription, keyword));
         }

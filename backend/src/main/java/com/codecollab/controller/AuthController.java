@@ -1,9 +1,11 @@
 package com.codecollab.controller;
 
+import com.codecollab.common.Constants;
 import com.codecollab.common.Result;
 import com.codecollab.dto.LoginDTO;
 import com.codecollab.dto.RegisterDTO;
 import com.codecollab.dto.UpdateProfileDTO;
+import com.codecollab.exception.BusinessException;
 import com.codecollab.service.UserService;
 import com.codecollab.vo.LoginVO;
 import com.codecollab.vo.UserVO;
@@ -27,6 +29,15 @@ public class AuthController {
     @PostMapping("/register")
     public Result<UserVO> register(@Valid @RequestBody RegisterDTO dto) {
         return Result.success(userService.register(dto));
+    }
+
+    @PostMapping("/admin-register")
+    public Result<UserVO> adminRegister(HttpServletRequest request, @RequestBody RegisterDTO dto) {
+        String role = (String) request.getAttribute("role");
+        if (!Constants.ROLE_ADMIN.equals(role)) {
+            throw new BusinessException(403, "需要管理员权限");
+        }
+        return Result.success(userService.adminRegister(dto));
     }
 
     @PostMapping("/send-code")

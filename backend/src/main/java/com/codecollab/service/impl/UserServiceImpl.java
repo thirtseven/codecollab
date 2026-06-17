@@ -82,9 +82,6 @@ public class UserServiceImpl implements UserService {
         if (userMapper.selectByUsername(dto.getUsername()) != null) {
             throw new BusinessException(400, "用户名已存在");
         }
-        if (userMapper.selectByEmail(dto.getEmail()) != null) {
-            throw new BusinessException(400, "邮箱已注册");
-        }
 
         boolean skipVerification = "888888".equals(dto.getCode());
         if (!skipVerification) {
@@ -103,6 +100,23 @@ public class UserServiceImpl implements UserService {
         user.setPassword(passwordEncoder.encode(dto.getPassword()));
         user.setNickname(dto.getNickname() != null ? dto.getNickname() : dto.getUsername());
         user.setRole(Constants.ROLE_STUDENT);
+        user.setStatus(Constants.STATUS_ACTIVE);
+        userMapper.insert(user);
+        return convertToVO(user);
+    }
+
+    @Override
+    @Transactional
+    public UserVO adminRegister(RegisterDTO dto) {
+        if (userMapper.selectByUsername(dto.getUsername()) != null) {
+            throw new BusinessException(400, "用户名已存在");
+        }
+        User user = new User();
+        user.setUsername(dto.getUsername());
+        user.setEmail(dto.getEmail());
+        user.setPassword(passwordEncoder.encode(dto.getPassword()));
+        user.setNickname(dto.getNickname() != null ? dto.getNickname() : dto.getUsername());
+        user.setRole(dto.getRole() != null ? dto.getRole() : Constants.ROLE_STUDENT);
         user.setStatus(Constants.STATUS_ACTIVE);
         userMapper.insert(user);
         return convertToVO(user);

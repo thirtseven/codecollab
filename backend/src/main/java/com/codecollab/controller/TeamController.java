@@ -39,16 +39,19 @@ public class TeamController {
     }
 
     @GetMapping("/{id}")
-    public Result<TeamVO> getTeamDetail(@PathVariable Long id) {
-        return Result.success(teamService.getTeamDetail(id));
+    public Result<TeamVO> getTeamDetail(HttpServletRequest request, @PathVariable Long id,
+                                        @RequestParam(required = false) String inviteCode) {
+        Long userId = (Long) request.getAttribute("userId");
+        return Result.success(teamService.getTeamDetail(id, userId, inviteCode));
     }
 
     @GetMapping
-    public Result<PageResult<TeamVO>> getTeamPage(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String keyword) {
-        return Result.success(teamService.getTeamPage(page, size, keyword));
+    public Result<PageResult<TeamVO>> getTeamPage(HttpServletRequest request,
+                                                    @RequestParam(defaultValue = "1") int page,
+                                                    @RequestParam(defaultValue = "10") int size,
+                                                    @RequestParam(required = false) String keyword) {
+        Long userId = (Long) request.getAttribute("userId");
+        return Result.success(teamService.getTeamPage(page, size, keyword, userId));
     }
 
     @GetMapping("/my")

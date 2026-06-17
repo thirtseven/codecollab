@@ -5,6 +5,7 @@ import com.codecollab.common.PageResult;
 import com.codecollab.common.Result;
 import com.codecollab.exception.BusinessException;
 import com.codecollab.service.AdminService;
+import com.codecollab.vo.AdminUserVO;
 import com.codecollab.vo.UserVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -36,6 +37,22 @@ public class AdminController {
         return Result.success(adminService.getUserPage(page, size, keyword, role));
     }
 
+    @GetMapping("/users/detail")
+    public Result<PageResult<AdminUserVO>> getAdminUsers(HttpServletRequest request,
+                                                          @RequestParam(defaultValue = "1") int page,
+                                                          @RequestParam(defaultValue = "10") int size,
+                                                          @RequestParam(required = false) String keyword,
+                                                          @RequestParam(required = false) String role) {
+        checkAdmin(request);
+        return Result.success(adminService.getAdminUserPage(page, size, keyword, role));
+    }
+
+    @GetMapping("/users/{id}")
+    public Result<AdminUserVO> getAdminUserDetail(HttpServletRequest request, @PathVariable Long id) {
+        checkAdmin(request);
+        return Result.success(adminService.getAdminUserDetail(id));
+    }
+
     @PutMapping("/users/{id}/status")
     public Result<Void> updateUserStatus(HttpServletRequest request, @PathVariable Long id, @RequestParam Integer status) {
         checkAdmin(request);
@@ -48,6 +65,25 @@ public class AdminController {
         checkAdmin(request);
         Long operatorId = (Long) request.getAttribute("userId");
         adminService.updateUserRole(operatorId, id, role);
+        return Result.success();
+    }
+
+    @PutMapping("/users/{id}/password")
+    public Result<Void> resetPassword(HttpServletRequest request, @PathVariable Long id, @RequestParam String newPassword) {
+        checkAdmin(request);
+        adminService.resetUserPassword(id, newPassword);
+        return Result.success();
+    }
+
+    @PutMapping("/users/{id}/update")
+    public Result<Void> updateUser(HttpServletRequest request, @PathVariable Long id,
+                                    @RequestParam(required = false) String username,
+                                    @RequestParam(required = false) String email,
+                                    @RequestParam(required = false) String nickname,
+                                    @RequestParam(required = false) String phone,
+                                    @RequestParam(required = false) String role) {
+        checkAdmin(request);
+        adminService.updateUser(id, username, email, nickname, phone, role);
         return Result.success();
     }
 
