@@ -83,16 +83,14 @@ public class UserServiceImpl implements UserService {
             throw new BusinessException(400, "用户名已存在");
         }
 
-        boolean skipVerification = "888888".equals(dto.getCode());
-        if (!skipVerification) {
-            EmailVerification verification = emailVerificationMapper.findValidCode(
-                dto.getEmail(), Constants.EMAIL_TYPE_REGISTER, LocalDateTime.now());
-            if (verification == null || !verification.getCode().equals(dto.getCode())) {
-                throw new BusinessException(400, "验证码无效或已过期");
-            }
-            verification.setUsed(1);
-            emailVerificationMapper.updateById(verification);
+        // 验证邮箱验证码
+        EmailVerification verification = emailVerificationMapper.findValidCode(
+            dto.getEmail(), Constants.EMAIL_TYPE_REGISTER, LocalDateTime.now());
+        if (verification == null || !verification.getCode().equals(dto.getCode())) {
+            throw new BusinessException(400, "验证码无效或已过期");
         }
+        verification.setUsed(1);
+        emailVerificationMapper.updateById(verification);
 
         User user = new User();
         user.setUsername(dto.getUsername());

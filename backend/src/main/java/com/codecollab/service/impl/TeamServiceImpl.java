@@ -8,9 +8,11 @@ import com.codecollab.common.PageResult;
 import com.codecollab.dto.TeamDTO;
 import com.codecollab.entity.Team;
 import com.codecollab.entity.TeamMember;
+import com.codecollab.entity.User;
 import com.codecollab.exception.BusinessException;
 import com.codecollab.mapper.TeamMapper;
 import com.codecollab.mapper.TeamMemberMapper;
+import com.codecollab.mapper.UserMapper;
 import com.codecollab.service.TeamService;
 import com.codecollab.vo.TeamMemberVO;
 import com.codecollab.vo.TeamVO;
@@ -18,7 +20,9 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,6 +33,9 @@ public class TeamServiceImpl extends com.baomidou.mybatisplus.extension.service.
 
     @Autowired
     private TeamMemberMapper teamMemberMapper;
+
+    @Autowired
+    private UserMapper userMapper;
 
     @Override
     @Transactional
@@ -124,8 +131,8 @@ public class TeamServiceImpl extends com.baomidou.mybatisplus.extension.service.
     @Override
     public PageResult<TeamVO> getTeamPage(int page, int size, String keyword, Long userId) {
         Page<Team> pageParam = new Page<>(page, size);
-        List<Team> teams = teamMapper.selectTeamsByUserId(userId);
-        List<Long> teamIds = teams.stream().map(Team::getId).collect(Collectors.toList());
+        List<Team> userTeams = teamMapper.selectTeamsByUserId(userId);
+        List<Long> teamIds = userTeams.stream().map(Team::getId).collect(Collectors.toList());
         
         LambdaQueryWrapper<Team> wrapper = new LambdaQueryWrapper<>();
         if (teamIds.isEmpty()) {
@@ -138,9 +145,33 @@ public class TeamServiceImpl extends com.baomidou.mybatisplus.extension.service.
         }
         wrapper.orderByDesc(Team::getCreatedAt);
         Page<Team> result = teamMapper.selectPage(pageParam, wrapper);
+        
+        List<Long> pageTeamIds = result.getRecords().stream().map(Team::getId).collect(Collectors.toList());
+        Map<Long, Integer> memberCountMap = new HashMap<>();
+        if (!pageTeamIds.isEmpty()) {
+            LambdaQueryWrapper<TeamMember> countWrapper = new LambdaQueryWrapper<>();
+            countWrapper.in(TeamMember::getTeamId, pageTeamIds);
+            List<TeamMember> allMembers = teamMemberMapper.selectList(countWrapper);
+            for (TeamMember member : allMembers) {
+                memberCountMap.merge(member.getTeamId(), 1, Integer::sum);
+            }
+        }
+        
+        Map<Long, String> creatorNameMap = new HashMap<>();
+        for (Team team : result.getRecords()) {
+            if (team.getCreatorId() != null) {
+                User creator = userMapper.selectById(team.getCreatorId());
+                if (creator != null) {
+                    creatorNameMap.put(team.getCreatorId(), creator.getUsername());
+                }
+            }
+        }
+        
         List<TeamVO> records = result.getRecords().stream().map(t -> {
             TeamVO vo = new TeamVO();
             BeanUtils.copyProperties(t, vo);
+            vo.setMemberCount(memberCountMap.getOrDefault(t.getId(), 0));
+            vo.setCreatorName(creatorNameMap.get(t.getCreatorId()));
             return vo;
         }).collect(Collectors.toList());
         return PageResult.of(result.getTotal(), result.getPages(), result.getCurrent(), result.getSize(), records);

@@ -10,13 +10,17 @@ import com.codecollab.entity.CodeSubmission;
 import com.codecollab.entity.Project;
 import com.codecollab.entity.ProjectFile;
 import com.codecollab.entity.SubmissionFile;
+import com.codecollab.entity.Team;
 import com.codecollab.entity.TeamMember;
+import com.codecollab.entity.User;
 import com.codecollab.exception.BusinessException;
 import com.codecollab.mapper.CodeSubmissionMapper;
 import com.codecollab.mapper.ProjectFileMapper;
 import com.codecollab.mapper.ProjectMapper;
 import com.codecollab.mapper.SubmissionFileMapper;
+import com.codecollab.mapper.TeamMapper;
 import com.codecollab.mapper.TeamMemberMapper;
+import com.codecollab.mapper.UserMapper;
 import com.codecollab.service.ProjectService;
 import com.codecollab.vo.ProjectVO;
 import org.springframework.beans.BeanUtils;
@@ -24,7 +28,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -44,6 +50,12 @@ public class ProjectServiceImpl extends com.baomidou.mybatisplus.extension.servi
 
     @Autowired
     private SubmissionFileMapper submissionFileMapper;
+
+    @Autowired
+    private UserMapper userMapper;
+
+    @Autowired
+    private TeamMapper teamMapper;
 
     @Override
     @Transactional
@@ -162,9 +174,52 @@ public class ProjectServiceImpl extends com.baomidou.mybatisplus.extension.servi
         }
         wrapper.orderByDesc(Project::getCreatedAt);
         Page<Project> result = projectMapper.selectPage(pageParam, wrapper);
+        
+        List<Long> projectIds = result.getRecords().stream().map(Project::getId).collect(Collectors.toList());
+        Map<Long, Integer> fileCountMap = new HashMap<>();
+        Map<Long, Integer> submissionCountMap = new HashMap<>();
+        
+        if (!projectIds.isEmpty()) {
+            LambdaQueryWrapper<ProjectFile> fileWrapper = new LambdaQueryWrapper<>();
+            fileWrapper.in(ProjectFile::getProjectId, projectIds);
+            fileWrapper.eq(ProjectFile::getIsDirectory, 0);
+            List<ProjectFile> allFiles = projectFileMapper.selectList(fileWrapper);
+            for (ProjectFile file : allFiles) {
+                fileCountMap.merge(file.getProjectId(), 1, Integer::sum);
+            }
+            
+            LambdaQueryWrapper<CodeSubmission> subWrapper = new LambdaQueryWrapper<>();
+            subWrapper.in(CodeSubmission::getProjectId, projectIds);
+            List<CodeSubmission> allSubmissions = submissionMapper.selectList(subWrapper);
+            for (CodeSubmission sub : allSubmissions) {
+                submissionCountMap.merge(sub.getProjectId(), 1, Integer::sum);
+            }
+        }
+        
+        Map<Long, String> teamNameMap = new HashMap<>();
+        Map<Long, String> creatorNameMap = new HashMap<>();
+        for (Project project : result.getRecords()) {
+            if (project.getTeamId() != null) {
+                Team team = teamMapper.selectById(project.getTeamId());
+                if (team != null) {
+                    teamNameMap.put(project.getTeamId(), team.getName());
+                }
+            }
+            if (project.getCreatorId() != null) {
+                User creator = userMapper.selectById(project.getCreatorId());
+                if (creator != null) {
+                    creatorNameMap.put(project.getCreatorId(), creator.getUsername());
+                }
+            }
+        }
+        
         List<ProjectVO> records = result.getRecords().stream().map(p -> {
             ProjectVO vo = new ProjectVO();
             BeanUtils.copyProperties(p, vo);
+            vo.setFileCount(fileCountMap.getOrDefault(p.getId(), 0));
+            vo.setSubmissionCount(submissionCountMap.getOrDefault(p.getId(), 0));
+            vo.setTeamName(teamNameMap.get(p.getTeamId()));
+            vo.setCreatorName(creatorNameMap.get(p.getCreatorId()));
             return vo;
         }).collect(Collectors.toList());
         return PageResult.of(result.getTotal(), result.getPages(), result.getCurrent(), result.getSize(), records);

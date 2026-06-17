@@ -9,9 +9,9 @@ spring:
     name: codecollab-backend
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://127.0.0.1:3306/codecollab?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&defaultAuthenticationPlugin=mysql_native_password
-    username: codecollab
-    password: codecollab123
+    url: ${DB_URL:jdbc:mysql://127.0.0.1:3306/codecollab?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&defaultAuthenticationPlugin=mysql_native_password}
+    username: ${DB_USERNAME:codecollab}
+    password: ${DB_PASSWORD:}
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
     time-zone: Asia/Shanghai
@@ -19,8 +19,8 @@ spring:
   mail:
     host: smtp.163.com
     port: 465
-    username: ${MAIL_USERNAME:13316050813@163.com}
-    password: ${MAIL_PASSWORD:KCWRr3B4mFgBDq2q}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
     default-encoding: UTF-8
     properties:
       mail.smtp.auth: true
@@ -49,19 +49,19 @@ mybatis-plus:
       logic-not-delete-value: 0
 
 jwt:
-  secret: CodeCollabSecretKey2024VeryLongSecretKeyForJWTTokenGeneration
+  secret: ${JWT_SECRET:}
   expiration: 86400000
   refresh-expiration: 604800000
 
 email:
   verification:
     enabled: true
-  from: ${MAIL_USERNAME:13316050813@163.com}
+  from: ${MAIL_USERNAME:}
 
 ai:
-  api-key: ""
-  api-url: "https://token-plan-cn.xiaomimimo.com/v1/chat/completions"
-  model: "mimo-v2.5-pro"
+  api-key: ${AI_API_KEY:}
+  api-url: ${AI_API_URL:https://token-plan-cn.xiaomimimo.com/v1/chat/completions}
+  model: ${AI_MODEL:mimo-v2.5-pro}
 
 logging:
   level:
