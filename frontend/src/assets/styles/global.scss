@@ -1,0 +1,152 @@
+:root {
+  --primary-color: #409eff;
+  --success-color: #67c23a;
+  --warning-color: #e6a23c;
+  --danger-color: #f56c6c;
+  --info-color: #909399;
+  --bg-color: #f5f7fa;
+  --card-bg: #ffffff;
+  --text-color: #303133;
+  --text-color-secondary: #606266;
+  --border-color: #dcdfe6;
+  --sidebar-bg: #304156;
+  --sidebar-text: #bfcbd9;
+  --header-bg: #ffffff;
+  --header-height: 60px;
+  --sidebar-width: 220px;
+}
+
+[data-theme="dark"] {
+  --primary-color: #409eff;
+  --success-color: #67c23a;
+  --warning-color: #e6a23c;
+  --danger-color: #f56c6c;
+  --info-color: #909399;
+  --bg-color: #1a1a2e;
+  --card-bg: #16213e;
+  --text-color: #e0e0e0;
+  --text-color-secondary: #a0a0a0;
+  --border-color: #2a2a4a;
+  --sidebar-bg: #0f3460;
+  --sidebar-text: #e0e0e0;
+  --header-bg: #16213e;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+a {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.page-container {
+  padding: 20px;
+  animation: fadeIn 0.3s ease;
+}
+
+.card {
+  background: var(--card-bg);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.el-button {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.el-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.el-button:active {
+  transform: translateY(0);
+}
+
+.el-card {
+  background: var(--card-bg) !important;
+  border-color: var(--border-color) !important;
+  transition: all 0.3s ease !important;
+}
+
+.el-input__inner {
+  background-color: var(--card-bg) !important;
+  color: var(--text-color) !important;
+  border-color: var(--border-color) !important;
+}
+
+.el-table {
+  background-color: var(--card-bg) !important;
+  color: var(--text-color) !important;
+}
+
+.el-table th {
+  background-color: var(--bg-color) !important;
+}
+
+.el-table td {
+  border-bottom-color: var(--border-color) !important;
+}
+
+.el-dialog {
+  background: var(--card-bg) !important;
+}
+
+.el-dialog__title {
+  color: var(--text-color) !important;
+}
+
+.el-form-item__label {
+  color: var(--text-color) !important;
+}
+
+.el-menu {
+  border-right: none !important;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+.fade-enter, .fade-leave-to {
+  opacity: 0;
+}
+
+.slide-enter-active, .slide-leave-active {
+  transition: all 0.3s ease;
+}
+.slide-enter, .slide-leave-to {
+  opacity: 0;
+  transform: translateX(20px);
+}

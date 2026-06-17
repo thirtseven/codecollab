@@ -1,0 +1,74 @@
+server:
+  port: 8080
+  address: 0.0.0.0
+  servlet:
+    context-path: /api
+
+spring:
+  application:
+    name: codecollab-backend
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/codecollab?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&defaultAuthenticationPlugin=mysql_native_password
+    username: codecollab
+    password: codecollab123
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+    default-property-inclusion: non_null
+  mail:
+    host: smtp.163.com
+    port: 465
+    username: ${MAIL_USERNAME:13316050813@163.com}
+    password: ${MAIL_PASSWORD:KCWRr3B4mFgBDq2q}
+    default-encoding: UTF-8
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.ssl.enable: true
+      mail.smtp.ssl.required: true
+      mail.smtp.socketFactory.class: javax.net.ssl.SSLSocketFactory
+      mail.smtp.socketFactory.port: 465
+      mail.smtp.socketFactory.fallback: false
+      mail.debug: true
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 50MB
+
+mybatis-plus:
+  mapper-locations: classpath:mapper/**/*.xml
+  type-aliases-package: com.codecollab.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+jwt:
+  secret: CodeCollabSecretKey2024VeryLongSecretKeyForJWTTokenGeneration
+  expiration: 86400000
+  refresh-expiration: 604800000
+
+email:
+  verification:
+    enabled: true
+  from: ${MAIL_USERNAME:13316050813@163.com}
+
+ai:
+  api-key: ""
+  api-url: "https://token-plan-cn.xiaomimimo.com/v1/chat/completions"
+  model: "mimo-v2.5-pro"
+
+logging:
+  level:
+    com.codecollab: debug
+    org.springframework.web: info
+
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn

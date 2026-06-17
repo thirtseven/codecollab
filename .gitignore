@@ -1,0 +1,57 @@
+# Backend
+backend/target/
+backend/.mvn/
+backend/*.iml
+backend/.idea/
+backend/*.log
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/*.log
+frontend/.env.local
+frontend/.env.*.local
+
+# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/
+tmp/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Build
+build/
+dist/
+*.jar
+*.war
+
+# Dependencies
+node_modules/
+vendor/
+target/
+
+# Test
+coverage/
+test-results/
+
+# Misc
+*.bak
+*.tmp
+*.temp

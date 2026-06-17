@@ -1,0 +1,17 @@
+package com.codecollab.entity;
+
+import com.baomidou.mybatisplus.annotation.*;
+import lombok.Data;
+import java.time.LocalDateTime;
+
+@Data
+@TableName("ai_messages")
+public class AiMessage {
+    @TableId(type = IdType.AUTO)
+    private Long id;
+    private Long conversationId;
+    private String role;
+    private String content;
+    private Integer tokenCount;
+    private LocalDateTime createdAt;
+}
