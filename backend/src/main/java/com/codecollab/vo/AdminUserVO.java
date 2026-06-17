@@ -8,7 +8,6 @@ public class AdminUserVO {
     private Long id;
     private String username;
     private String email;
-    private String passwordHash;
     private String avatar;
     private String nickname;
     private String phone;

@@ -95,7 +95,6 @@ public class AdminServiceImpl extends com.baomidou.mybatisplus.extension.service
     private AdminUserVO convertToAdminVO(User user) {
         AdminUserVO vo = new AdminUserVO();
         BeanUtils.copyProperties(user, vo);
-        vo.setPasswordHash(user.getPassword());
         return vo;
     }
 
